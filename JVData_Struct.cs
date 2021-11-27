@@ -7,6 +7,13 @@ using System.Text;
 /// <remarks>
 /// 最終更新日：2009年12月8日
 /// (C) Copyright JRA SYSTEM SERVICE CO.,LTD. 2009 All rights reserved
+///
+/// CHANGED:
+/// * Remove crlf
+/// * Surpress CS8600 warning
+/// TODO:
+/// * Add WC
+/// * And more...?
 /// </remarks>
 public static class JVData_Struct
 {
