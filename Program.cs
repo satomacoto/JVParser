@@ -1,9 +1,8 @@
 ﻿using Newtonsoft.Json;
 using static JVData_Struct;
 
-
-
 namespace JVParser;
+
 class Program
 {
     static string FirstArg(string[] args)
