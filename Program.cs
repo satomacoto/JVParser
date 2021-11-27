@@ -5,49 +5,19 @@ namespace JVParser;
 
 class Program
 {
-    static string FirstArg(string[] args)
-    {
-        return args.Length > 0 ? args[0] : "";
-    }
-
-    static string SecondArg(string[] args)
-    {
-        return args.Length > 1 ? args[1] : "";
-    }
-
-    static void ConverEachLineToJson(string inputFilename, string outputFilename)
-    {
-        string? line;
-        System.IO.StreamReader inputFile = new System.IO.StreamReader(inputFilename);
-        System.IO.StreamWriter outputFile = new System.IO.StreamWriter(outputFilename);
-        while ((line = inputFile.ReadLine()) != null)
-        {
-            var jsonString = JVReadToJson(line);
-            outputFile.WriteLine(jsonString);
-        }
-        inputFile.Close();
-        outputFile.Close();
-    }
-
     static void Main(string[] args)
     {
         // To use Shift-JIS encoding, use the following:
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-        string? inputFilename = FirstArg(args);
-        if (inputFilename == "")
+        // read line and convert to json
+        string? line;
+        while ((line = Console.ReadLine()) != null)
         {
-            Console.WriteLine("Please specify a filename");
-            return;
+            var jsonString = JVReadToJson(line);
+            Console.WriteLine(jsonString);
         }
 
-        string? outputFilename = SecondArg(args);
-        if (outputFilename == "")
-        {
-            Console.WriteLine("Please specify an output filename");
-            return;
-        }
-        ConverEachLineToJson(inputFilename, outputFilename);
     }
 
     static string JVReadToJson(string line)
