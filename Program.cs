@@ -84,7 +84,7 @@ class Program
         var tk = new JV_TK_TOKUUMA();
         var tm = new JV_TM_INFO();
         var um = new JV_UM_UMA();
-        // var wc = new(); JV_WC
+        var wc = new JV_WC_WOODCHIP();
         var we = new JV_WE_WEATHER();
         var wf = new JV_WF_INFO();
         var wh = new JV_WH_BATAIJYU();
@@ -224,6 +224,10 @@ class Program
             case "UM":
                 um.SetDataB(ref line);
                 jsonString = JsonConvert.SerializeObject(um);
+                break;
+            case "WC":
+                wc.SetDataB(ref line);
+                jsonString = JsonConvert.SerializeObject(wc);
                 break;
             case "WE":
                 we.SetDataB(ref line);
