@@ -1,5 +1,4 @@
-﻿using JsonFlatten;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using static JVData_Struct;
 
@@ -222,17 +221,12 @@ namespace JVParser
             }
             if (jsonObject != null)
             {
-                // var flattened = jsonObject
-                //     .SelectTokens("$..*")
-                //     .Where(t => !t.HasValues)
-                //     .ToDictionary(t => t.Path, t => t.ToString());
                 var flattened = jsonObject
-                    .Descendants()
-                    .OfType<JValue>()
-                    .ToDictionary(jv => jv.Path, jv => jv.ToString());
+                    .SelectTokens("$..*")
+                    .Where(t => !t.HasValues)
+                    .ToDictionary(t => t.Path, t => t.ToString());
 
                 return JsonConvert.SerializeObject(flattened);
-                // return jsonObject.ToString(Formatting.None);
             }
             else
             {
