@@ -222,8 +222,17 @@ namespace JVParser
             }
             if (jsonObject != null)
             {
-                // return JsonConvert.SerializeObject(jsonObject.Flatten());
-                return jsonObject.ToString(Formatting.None);
+                // var flattened = jsonObject
+                //     .SelectTokens("$..*")
+                //     .Where(t => !t.HasValues)
+                //     .ToDictionary(t => t.Path, t => t.ToString());
+                var flattened = jsonObject
+                    .Descendants()
+                    .OfType<JValue>()
+                    .ToDictionary(jv => jv.Path, jv => jv.ToString());
+
+                return JsonConvert.SerializeObject(flattened);
+                // return jsonObject.ToString(Formatting.None);
             }
             else
             {
