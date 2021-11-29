@@ -13,10 +13,13 @@ namespace JVParser
 
             // read line and convert to json
             string? line;
+            string? jsonString;
             while ((line = Console.ReadLine()) != null)
             {
-                var jsonString = JVReadToJson(line);
-                Console.WriteLine(jsonString);
+                if ((jsonString = JVReadToJson(line)) != null)
+                {
+                    Console.WriteLine(jsonString);
+                }
             }
 
         }
