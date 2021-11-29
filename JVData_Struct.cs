@@ -3750,14 +3750,14 @@ public static class JVData_Struct
     public struct CC_INFO
     {
         public string Kyori;    // 距離
-        public string TruckCd;  // トラックコード
+        public string TrackCD;  // トラックコード
 
 
         // データセット
         public void SetDataB(byte[] bBuff)
         {
             Kyori = MidB2S(ref bBuff, 1, 4);
-            TruckCd = MidB2S(ref bBuff, 5, 2);
+            TrackCD = MidB2S(ref bBuff, 5, 2);
         }
     }
 
