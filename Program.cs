@@ -44,6 +44,7 @@ namespace JVParser
             var hy = new JV_HY_BAMEIORIGIN();
             var jc = new JV_JC_INFO();
             var jg = new JV_JG_JOGAIBA();
+            var ks = new JV_KS_KISYU();
             var o1 = new JV_O1_ODDS_TANFUKUWAKU();
             var o2 = new JV_O2_ODDS_UMAREN();
             var o3 = new JV_O3_ODDS_WIDE();
@@ -141,6 +142,10 @@ namespace JVParser
                 case "JG":
                     jg.SetDataB(ref line);
                     jsonObject = JObject.FromObject(jg);
+                    break;
+                case "KS":
+                    ks.SetDataB(ref line);
+                    jsonObject = JObject.FromObject(ks);
                     break;
                 case "O1":
                     o1.SetDataB(ref line);
