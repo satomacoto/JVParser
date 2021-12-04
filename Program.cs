@@ -1,9 +1,85 @@
-﻿using Newtonsoft.Json;
+﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using static JVData_Struct;
 
 namespace JVParser
 {
+    // Class to manage mutliple stream writers
+    class RecordSpecStreamWriterManager
+    {
+        // List of stream writers
+        private Dictionary<string, StreamWriter> streamWriters;
+
+        // Output directory
+        private string outputDir;
+
+        // File name prefix
+        private string fileNamePrefix;
+
+        // Constructor
+        public RecordSpecStreamWriterManager(string outputDirectory, string fileNamePrefix)
+        {
+            this.streamWriters = new Dictionary<string, StreamWriter>();
+            this.outputDir = outputDirectory;
+            this.fileNamePrefix = fileNamePrefix;
+        }
+
+        // Destructor
+        ~RecordSpecStreamWriterManager()
+        {
+            foreach (KeyValuePair<string, StreamWriter> streamWriter in streamWriters)
+            {
+                streamWriter.Value.Close();
+            }
+        }
+
+        // Ouput path
+        private string GetOutputPath(string recordSpecName)
+        {
+            string[] paths = { outputDir, fileNamePrefix + "-" + recordSpecName + ".jsonl" };
+            return Path.Combine(paths);
+        }
+
+        // Add a steam writer with file name if not exists and get the stream writer
+        private StreamWriter GetStreamWriter(string recordSpecName)
+        {
+            if (!streamWriters.ContainsKey(recordSpecName))
+            {
+                streamWriters.Add(recordSpecName, new StreamWriter(GetOutputPath(recordSpecName)));
+            }
+            return streamWriters[recordSpecName];
+        }
+
+        // Write a string to a stream writer
+        public void WriteToStreamWriter(string recordSpecName, string text)
+        {
+            GetStreamWriter(recordSpecName).Write(text);
+        }
+
+        // Write a line to a stream writer
+        public void WriteLineToStreamWriter(string recordSpecName, string text)
+        {
+            GetStreamWriter(recordSpecName).WriteLine(text);
+        }
+
+    }
+
+    class JVJson
+    {
+        public string recordSpec { get; set; }
+        public string json { get; set; }
+
+        public JVJson(string recordSpec, string json)
+        {
+            this.recordSpec = recordSpec;
+            this.json = json;
+        }
+    }
+
+
+
     class Program
     {
         static void Main(string[] args)
@@ -11,20 +87,48 @@ namespace JVParser
             // To use Shift-JIS encoding, use the following:
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-            // read line and convert to json
+            // Get the input file path
+            string inputFilePath = args[0];
+
+            // Get output directory from args
+            string outputDir = args[1];
+
+            // Get input file name without extension
+            string inputFileName = Path.GetFileNameWithoutExtension(inputFilePath);
+
+            // Initalize the recordspec stream writer manager
+            RecordSpecStreamWriterManager recordSpecStreamWriterManager = new RecordSpecStreamWriterManager(outputDir, inputFileName);
+
             string? line;
-            string? jsonString;
-            while ((line = Console.ReadLine()) != null)
+            JVJson? jvJson;
+
+
+            // Read from the input file
+            using (StreamReader sr = new StreamReader(inputFilePath))
             {
-                if ((jsonString = JVReadToJson(line)) != null)
+                // Measure the calculation time
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                int lineNumber = 0;
+                // read line and convert to json
+                while ((line = sr.ReadLine()) != null)
                 {
-                    Console.WriteLine(jsonString);
+                    if ((jvJson = JVReadToJson(line)) != null)
+                    {
+                        recordSpecStreamWriterManager.WriteLineToStreamWriter(jvJson.recordSpec, jvJson.json);
+                    }
+                    lineNumber++;
+
+                    // Print progress
+                    if (lineNumber % 1000 == 0)
+                    {
+                        Console.Write("Processed " + lineNumber + " lines in " + stopwatch.ElapsedMilliseconds + " ms.\r");
+                    }
                 }
             }
-
         }
 
-        static string? JVReadToJson(string line)
+        static JVJson? JVReadToJson(string line)
         {
             var av = new JV_AV_INFO();
             var bn = new JV_BN_BANUSI();
@@ -68,8 +172,8 @@ namespace JVParser
 
             JObject? jsonObject = null;
 
-            var dataKubun = line.Substring(0, 2);
-            switch (dataKubun)
+            var recordSpec = line.Substring(0, 2);
+            switch (recordSpec)
             {
                 case "AV":
                     av.SetDataB(ref line);
@@ -234,7 +338,7 @@ namespace JVParser
                     .Where(t => !t.HasValues)
                     .ToDictionary(t => t.Path, t => t.ToString());
 
-                return JsonConvert.SerializeObject(flattened);
+                return new JVJson(recordSpec, JsonConvert.SerializeObject(flattened));
             }
             else
             {
