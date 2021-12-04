@@ -7,11 +7,6 @@ using System.Text;
 /// <remarks>
 /// 最終更新日：2009年12月8日
 /// (C) Copyright JRA SYSTEM SERVICE CO.,LTD. 2009 All rights reserved
-///
-/// CHANGED:
-/// * Remove crlf
-/// * Surpress CS8600 warning
-/// * Add JV_WC_WOODCHIP and reorder structs
 /// </remarks>
 public static class JVData_Struct
 {
@@ -583,7 +578,7 @@ public static class JVData_Struct
         public string ChokyosiRyakusyo;     // 調教師名略称
         public string Futan;                // 負担重量
 
-        public string Koryu;                // 交流区分
+        public string KoryuKubun;           // 交流区分
 
 
         // データセット
@@ -598,7 +593,7 @@ public static class JVData_Struct
             ChokyosiCode = MidB2S(ref bBuff, 54, 5);
             ChokyosiRyakusyo = MidB2S(ref bBuff, 59, 8);
             Futan = MidB2S(ref bBuff, 67, 3);
-            Koryu = MidB2S(ref bBuff, 70, 1);
+            KoryuKubun = MidB2S(ref bBuff, 70, 1);
         }
     }
 
@@ -851,7 +846,7 @@ public static class JVData_Struct
 
         public string FutanBefore;              // 変更前負担重量
 
-        public string Blinker;                  // ブリンカー使用区分
+        public string BlinkerKubun;             // ブリンカー使用区分
 
         public string reserved2;                // 予備
         public string KisyuCode;                // 騎手コード
@@ -951,7 +946,7 @@ public static class JVData_Struct
             reserved1 = MidB2S(ref bBuff, 229, 60);
             Futan = MidB2S(ref bBuff, 289, 3);
             FutanBefore = MidB2S(ref bBuff, 292, 3);
-            Blinker = MidB2S(ref bBuff, 295, 1);
+            BlinkerKubun = MidB2S(ref bBuff, 295, 1);
             reserved2 = MidB2S(ref bBuff, 296, 1);
             KisyuCode = MidB2S(ref bBuff, 297, 5);
             KisyuCodeBefore = MidB2S(ref bBuff, 302, 5);

@@ -1,8 +1,85 @@
-﻿using Newtonsoft.Json;
+﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using static JVData_Struct;
 
 namespace JVParser
 {
+    // Class to manage mutliple stream writers
+    class RecordSpecStreamWriterManager
+    {
+        // List of stream writers
+        private Dictionary<string, StreamWriter> streamWriters;
+
+        // Output directory
+        private string outputDir;
+
+        // File name prefix
+        private string fileNamePrefix;
+
+        // Constructor
+        public RecordSpecStreamWriterManager(string outputDirectory, string fileNamePrefix)
+        {
+            this.streamWriters = new Dictionary<string, StreamWriter>();
+            this.outputDir = outputDirectory;
+            this.fileNamePrefix = fileNamePrefix;
+        }
+
+        // Destructor
+        ~RecordSpecStreamWriterManager()
+        {
+            foreach (KeyValuePair<string, StreamWriter> streamWriter in streamWriters)
+            {
+                streamWriter.Value.Close();
+            }
+        }
+
+        // Ouput path
+        private string GetOutputPath(string recordSpecName)
+        {
+            string[] paths = { outputDir, fileNamePrefix + "-" + recordSpecName + ".jsonl" };
+            return Path.Combine(paths);
+        }
+
+        // Add a steam writer with file name if not exists and get the stream writer
+        private StreamWriter GetStreamWriter(string recordSpecName)
+        {
+            if (!streamWriters.ContainsKey(recordSpecName))
+            {
+                streamWriters.Add(recordSpecName, new StreamWriter(GetOutputPath(recordSpecName)));
+            }
+            return streamWriters[recordSpecName];
+        }
+
+        // Write a string to a stream writer
+        public void WriteToStreamWriter(string recordSpecName, string text)
+        {
+            GetStreamWriter(recordSpecName).Write(text);
+        }
+
+        // Write a line to a stream writer
+        public void WriteLineToStreamWriter(string recordSpecName, string text)
+        {
+            GetStreamWriter(recordSpecName).WriteLine(text);
+        }
+
+    }
+
+    class JVJson
+    {
+        public string recordSpec { get; set; }
+        public string json { get; set; }
+
+        public JVJson(string recordSpec, string json)
+        {
+            this.recordSpec = recordSpec;
+            this.json = json;
+        }
+    }
+
+
+
     class Program
     {
         static void Main(string[] args)
@@ -10,17 +87,48 @@ namespace JVParser
             // To use Shift-JIS encoding, use the following:
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-            // read line and convert to json
-            string? line;
-            while ((line = Console.ReadLine()) != null)
-            {
-                var jsonString = JVReadToJson(line);
-                Console.WriteLine(jsonString);
-            }
+            // Get the input file path
+            string inputFilePath = args[0];
 
+            // Get output directory from args
+            string outputDir = args[1];
+
+            // Get input file name without extension
+            string inputFileName = Path.GetFileNameWithoutExtension(inputFilePath);
+
+            // Initalize the recordspec stream writer manager
+            RecordSpecStreamWriterManager recordSpecStreamWriterManager = new RecordSpecStreamWriterManager(outputDir, inputFileName);
+
+            string? line;
+            JVJson? jvJson;
+
+
+            // Read from the input file
+            using (StreamReader sr = new StreamReader(inputFilePath))
+            {
+                // Measure the calculation time
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                int lineNumber = 0;
+                // read line and convert to json
+                while ((line = sr.ReadLine()) != null)
+                {
+                    if ((jvJson = JVReadToJson(line)) != null)
+                    {
+                        recordSpecStreamWriterManager.WriteLineToStreamWriter(jvJson.recordSpec, jvJson.json);
+                    }
+                    lineNumber++;
+
+                    // Print progress
+                    if (lineNumber % 1000 == 0)
+                    {
+                        Console.Write("Processed " + lineNumber + " lines in " + stopwatch.ElapsedMilliseconds + " ms.\r");
+                    }
+                }
+            }
         }
 
-        static string JVReadToJson(string line)
+        static JVJson? JVReadToJson(string line)
         {
             var av = new JV_AV_INFO();
             var bn = new JV_BN_BANUSI();
@@ -40,6 +148,7 @@ namespace JVParser
             var hy = new JV_HY_BAMEIORIGIN();
             var jc = new JV_JC_INFO();
             var jg = new JV_JG_JOGAIBA();
+            var ks = new JV_KS_KISYU();
             var o1 = new JV_O1_ODDS_TANFUKUWAKU();
             var o2 = new JV_O2_ODDS_UMAREN();
             var o3 = new JV_O3_ODDS_WIDE();
@@ -61,165 +170,180 @@ namespace JVParser
             var ys = new JV_YS_SCHEDULE();
 
 
-            var jsonString = "";
+            JObject? jsonObject = null;
 
-
-            var dataKubun = line.Substring(0, 2);
-            switch (dataKubun)
+            var recordSpec = line.Substring(0, 2);
+            switch (recordSpec)
             {
                 case "AV":
                     av.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(av);
+                    jsonObject = JObject.FromObject(av);
                     break;
                 case "BN":
                     bn.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(bn);
+                    jsonObject = JObject.FromObject(bn);
                     break;
                 case "BR":
                     br.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(br);
+                    jsonObject = JObject.FromObject(br);
                     break;
                 case "BT":
                     bt.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(bt);
+                    jsonObject = JObject.FromObject(bt);
                     break;
                 case "CC":
                     cc.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(cc);
+                    jsonObject = JObject.FromObject(cc);
                     break;
                 case "CH":
                     ch.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(ch);
+                    jsonObject = JObject.FromObject(ch);
                     break;
                 case "CK":
                     ck.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(ck);
+                    jsonObject = JObject.FromObject(ck);
                     break;
                 case "CS":
                     cs.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(cs);
+                    jsonObject = JObject.FromObject(cs);
                     break;
                 case "DM":
                     dm.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(dm);
+                    jsonObject = JObject.FromObject(dm);
                     break;
                 case "H1":
                     h1.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(h1);
+                    jsonObject = JObject.FromObject(h1);
                     break;
                 case "H6":
                     h6.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(h6);
+                    jsonObject = JObject.FromObject(h6);
                     break;
                 case "HC":
                     hc.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(hc);
+                    jsonObject = JObject.FromObject(hc);
                     break;
                 case "HN":
                     hn.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(hn);
+                    jsonObject = JObject.FromObject(hn);
                     break;
                 case "HR":
                     hr.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(hr);
+                    jsonObject = JObject.FromObject(hr);
                     break;
                 case "HS":
                     hs.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(hs);
+                    jsonObject = JObject.FromObject(hs);
                     break;
                 case "HY":
                     hy.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(hy);
+                    jsonObject = JObject.FromObject(hy);
                     break;
                 case "JC":
                     jc.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(jc);
+                    jsonObject = JObject.FromObject(jc);
                     break;
                 case "JG":
                     jg.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(jg);
+                    jsonObject = JObject.FromObject(jg);
+                    break;
+                case "KS":
+                    ks.SetDataB(ref line);
+                    jsonObject = JObject.FromObject(ks);
                     break;
                 case "O1":
                     o1.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(o1);
+                    jsonObject = JObject.FromObject(o1);
                     break;
                 case "O2":
                     o2.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(o2);
+                    jsonObject = JObject.FromObject(o2);
                     break;
                 case "O3":
                     o3.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(o3);
+                    jsonObject = JObject.FromObject(o3);
                     break;
                 case "O4":
                     o4.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(o4);
+                    jsonObject = JObject.FromObject(o4);
                     break;
                 case "O5":
                     o5.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(o5);
+                    jsonObject = JObject.FromObject(o5);
                     break;
                 case "O6":
                     o6.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(o6);
+                    jsonObject = JObject.FromObject(o6);
                     break;
                 case "RA":
                     ra.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(ra);
+                    jsonObject = JObject.FromObject(ra);
                     break;
                 case "RC":
                     rc.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(rc);
+                    jsonObject = JObject.FromObject(rc);
                     break;
                 case "SE":
                     se.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(se);
+                    jsonObject = JObject.FromObject(se);
                     break;
                 case "SK":
                     sk.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(sk);
+                    jsonObject = JObject.FromObject(sk);
                     break;
                 case "TC":
                     tc.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(tc);
+                    jsonObject = JObject.FromObject(tc);
                     break;
                 case "TK":
                     tk.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(tk);
+                    jsonObject = JObject.FromObject(tk);
                     break;
                 case "TM":
                     tm.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(tm);
+                    jsonObject = JObject.FromObject(tm);
                     break;
                 case "UM":
                     um.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(um);
+                    jsonObject = JObject.FromObject(um);
                     break;
                 case "WC":
                     wc.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(wc);
+                    jsonObject = JObject.FromObject(wc);
                     break;
                 case "WE":
                     we.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(we);
+                    jsonObject = JObject.FromObject(we);
                     break;
                 case "WF":
                     wf.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(wf);
+                    jsonObject = JObject.FromObject(wf);
                     break;
                 case "WH":
                     wh.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(wh);
+                    jsonObject = JObject.FromObject(wh);
                     break;
                 case "YS":
                     ys.SetDataB(ref line);
-                    jsonString = JsonConvert.SerializeObject(ys);
+                    jsonObject = JObject.FromObject(ys);
                     break;
                 default:
                     // 読み飛ばし
                     break;
             }
-            return jsonString;
+            if (jsonObject != null)
+            {
+                var flattened = jsonObject
+                    .SelectTokens("$..*")
+                    .Where(t => !t.HasValues)
+                    .ToDictionary(t => t.Path, t => t.ToString());
+
+                return new JVJson(recordSpec, JsonConvert.SerializeObject(flattened));
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 }
